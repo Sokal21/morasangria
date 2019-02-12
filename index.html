@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>MORA SANGRIA</title>
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden;
+            }
+
+            #scrollable-div {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+            }
+
+            #scrollable-div .content {
+                height: 1000vh;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="js/p5.min.js"></script>
+        <script src="js/sketch.js"></script>
+        <div id='scrollable-div'>
+            <div class='content'>
+
+            </div>
+        </div>
+    </body>
+
+    <script>
+        document.getElementById('scrollable-div').addEventListener('scroll', function(e) {
+            console.log(e);
+        })
+    </script>
+</html>
