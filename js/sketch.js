@@ -16,6 +16,7 @@ document.addEventListener('mousemove', e => {
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 1000 );
+camera.position.y = 200;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -70,7 +71,7 @@ const init = async () => {
     const starsGeometry = new THREE.Geometry();
     starsGeometry.vertices = tabulate(1000, i => {
         const vector = randomVector();
-        vector.multiplyScalar(randBetween(10, 2000));
+        vector.multiplyScalar(randBetween(100, 3000));
         return vector;
     });
 
@@ -89,15 +90,15 @@ const init = async () => {
 
     // SANGRIA
 
-    const jarraAlpha = await loadTexture('../img/jarraAlpha.png');
-    const jarraMask = await loadTexture('../img/jarraMask.png');
+    const jarraAlpha = await loadTexture('../img/jarraAlpha2.png');
+    const jarraMask = await loadTexture('../img/jarraMask2.png');
 
     const sangriaGeometry = new THREE.PlaneGeometry(1, 1);
     const sangriaMaterial = new THREE.ShaderMaterial({
         uniforms: {
             time: { value: 0.0 },
             timeMultiplier: { value: 2.0 },
-            wineFill: { value: 0.0 },
+            wineFill: { value: 0.8 },
             jarraTex: { type: 't', value: jarraAlpha },
             jarraMask: { type: 't', value: jarraMask },
         },
@@ -110,6 +111,14 @@ const init = async () => {
     sangria = new THREE.Mesh(sangriaGeometry, sangriaMaterial);
     sangria.position.z = -1;
 
+    const scrollSpeed = 0.0001;
+    const cameraSpeed = 0.1;
+    document.addEventListener('wheel', e => {
+        const wineFill = sangria.material.uniforms.wineFill.value;
+        camera.position.y -= e.deltaY * cameraSpeed;
+        sangria.material.uniforms.wineFill.value = constrain(wineFill - e.deltaY * scrollSpeed, 0.2, 0.8);
+    });
+
     scene.add(sangria);
     
     animate();
@@ -120,7 +129,6 @@ const animate = () => {
 
     updateSangria();
 
-    camera.position.y = mouseY * 0.1;
     sangria.position.y = camera.position.y;
 
     renderer.render( scene, camera );
@@ -128,7 +136,6 @@ const animate = () => {
 
 const updateSangria = () => {
     sangria.material.uniforms.time.value += clock.getDelta();
-    sangria.material.uniforms.wineFill.value = (Math.sin(mouseY * 0.01) + 1) * 0.5;
 }
 
 init();

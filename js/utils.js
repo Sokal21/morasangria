@@ -18,6 +18,14 @@ const repeat = (n, f) => {
     }
 }
 
+const constrain = (value, start, end) => {
+    if(value < start)
+        return start;
+    if(value > end)
+        return end;
+    return value;
+}
+
 const randBetween = (start, end) => {
     return THREE.Math.mapLinear(Math.random(), 0, 1, start, end);
 }

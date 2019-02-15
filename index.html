@@ -100,17 +100,20 @@
                 }
                 dropsMultiplier = clamp(dropsMultiplier, 0.0, 1.0);
 
-                float maskValue = length( texture2D(jarraMask, vPosition.xy + vec2(0.5, 0.5)) ) * 0.5 < 0.8 ? 0.0 : 1.0;
+                float maskValue = (texture2D(jarraMask, vPosition.xy + vec2(0.5, 0.5))).x < 0.5 ? 0.0 : 1.0;
                 float maskMultiplier = clamp(maskValue, 0.0, 1.0);
                 
                 vec3 wineColor = vec3(0.55, 0, 0.13);
-                float opacity = clamp(fillMultiplier + streamMultiplier + dropsMultiplier, 0.0, 1.0) * maskMultiplier;
+                float opacity = clamp(fillMultiplier + streamMultiplier + dropsMultiplier, 0.0, 0.8) * maskMultiplier;
 
-                vec4 jarraValue = texture2D(jarraTex, vPosition.xy + vec2(0.5, 0.5)) * 0.9;
+                vec4 jarraValue = texture2D(jarraTex, vPosition.xy + vec2(0.5, 0.5));
+                float jarraValueAlpha = jarraValue.x < 0.2 ? 0.0 : 1.0;
+                vec4 jarraColor = vec4(jarraValue.xyz, jarraValueAlpha);
+
                 vec3 allColor = wineColor * opacity;
                 vec4 fillColor = vec4( allColor, opacity );
 
-                gl_FragColor = fillColor + jarraValue;
+                gl_FragColor = fillColor + jarraColor * 0.9;
             }
         </script>
         
