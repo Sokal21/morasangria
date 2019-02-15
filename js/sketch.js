@@ -1,68 +1,135 @@
-let bg;
-let mascara;
 
-function setup() {
-    createCanvas(window.innerWidth, window.innerHeight);
-    bg = loadImage('img/JARRAFONDO.png');
-    mascara = loadImage('img/FONDO.png');
+//// MOUSE HANDLING ////
+
+let mouseX = 0;
+let mouseY = 0;
+
+document.addEventListener('mousemove', e => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
+
+////////////////////////
+
+//// SKETCH ////
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.getElementById("sketch-container").appendChild( renderer.domElement );
+
+const clock = new THREE.Clock;
+
+// Plano texturado con shader de sangría
+let sangria;
+
+// instantiate a loader
+const loader = new THREE.TextureLoader();
+
+// load a resource
+const loadTexture = url => {
+    return new Promise( (resolve, reject) => {
+        loader.load(
+            url,
+        
+            // onLoad callback
+            function ( texture ) {
+                // in this example we create the material when the texture is loaded
+                resolve(texture);
+            },
+        
+            // onProgress callback currently not supported
+            undefined,
+        
+            // onError callback
+            function ( err ) {
+                reject(err);
+            }
+        );
+    });
 }
 
-function draw() {
-    const t = map(mouseY, 0, height, 0, 1);
-    background(bg);
-    blendMode(BURN);
-    chorro(t);
-    vino(t);
-    blendMode(BLEND);
-    image(mascara, 0, 0, width, height);
+
+const init = async () => {
+
+    // ESTRELLAS
+    const starsMaterials = [
+        new THREE.PointsMaterial( { color: 0x888888, size: 2, sizeAttenuation: false } ),
+        new THREE.PointsMaterial( { color: 0x888888, size: 1, sizeAttenuation: false } ),
+        new THREE.PointsMaterial( { color: 0x555555, size: 2, sizeAttenuation: false } ),
+        new THREE.PointsMaterial( { color: 0x555555, size: 3, sizeAttenuation: false } ),
+        new THREE.PointsMaterial( { color: 0x3a3a3a, size: 1, sizeAttenuation: false } ),
+        new THREE.PointsMaterial( { color: 0xfafafa, size: 2, sizeAttenuation: false } ),
+        new THREE.PointsMaterial( { color: 0xf4f4f4, size: 2, sizeAttenuation: false } ),
+        new THREE.PointsMaterial( { color: 0xdadada, size: 1, sizeAttenuation: false } )
+    ];
+
+    const starsGeometry = new THREE.Geometry();
+    starsGeometry.vertices = tabulate(1000, i => {
+        const vector = randomVector();
+        vector.multiplyScalar(randBetween(10, 2000));
+        return vector;
+    });
+
+    starsMaterials.forEach( material => {
+        const stars = new THREE.Points( starsGeometry, material );
+        const eulerAngs = randomUnitVector();
+        stars.rotation.x = eulerAngs.x;
+        stars.rotation.y = eulerAngs.y;
+        stars.rotation.z = eulerAngs.z;
+        
+        stars.matrixAutoUpdate = false;
+        stars.updateMatrix();
+
+        scene.add(stars);
+    });
+
+    // SANGRIA
+
+    const jarraAlpha = await loadTexture('../img/jarraAlpha.png');
+    const jarraMask = await loadTexture('../img/jarraMask.png');
+
+    const sangriaGeometry = new THREE.PlaneGeometry(1, 1);
+    const sangriaMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0.0 },
+            timeMultiplier: { value: 2.0 },
+            wineFill: { value: 0.0 },
+            jarraTex: { type: 't', value: jarraAlpha },
+            jarraMask: { type: 't', value: jarraMask },
+        },
+
+        vertexShader: document.getElementById( 'vertexshader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
+    });
+    sangriaMaterial.transparent = true;
+
+    sangria = new THREE.Mesh(sangriaGeometry, sangriaMaterial);
+    sangria.position.z = -1;
+
+    scene.add(sangria);
+    
+    animate();
 }
 
+const animate = () => {
+    requestAnimationFrame( animate );
 
-function chorro(t) {
-    const detail = 100;
-    const gruesoRad = 20;
-    const finoRad = 5;
-    const amp = 20;
+    updateSangria();
 
-    fill(119, 7, 50);
-    noStroke();
+    camera.position.y = mouseY * 0.1;
+    sangria.position.y = camera.position.y;
 
-    beginShape();
-    for(let i = 0; i < detail; i++) {
-        const baseX = map(i, 0, detail, width/2 + gruesoRad, width/2 + finoRad);
-        const offsetX = noise(i * 0.1, frameCount * 0.05, 0) * amp;
-        const py = map(i, 0, detail, 0, height);
-        vertex(baseX + offsetX, py);
-    }
-    for(let i = 0; i < detail; i++) {
-        const baseX = map(i, 0, detail, width/2 - finoRad, width/2 - gruesoRad);
-        const offsetX = noise(i * 0.1, frameCount * 0.05, 1) * amp;
-        const py = map(i, 0, detail, height, 0);
-        vertex(baseX - offsetX, py);
-    }
-    endShape(CLOSE);
+    renderer.render( scene, camera );
 }
 
-function vino(t) {
-    const top = map(t, 0, 1, 200, height - 100);
-    fill(119, 7, 50);
-    noStroke();
-
-    const amp = 50;
-    const detail = 100;
-    beginShape();
-    for(let i = 0; i < detail; i++) {
-        const offsetY = noise(i * 0.1, frameCount * 0.05) * amp;
-        const px = map(i, 0, detail - 1, 0, width);
-        vertex(px, top + offsetY);
-    }
-    vertex(width, height);
-    vertex(0, height);
-    endShape(CLOSE);
+const updateSangria = () => {
+    sangria.material.uniforms.time.value += clock.getDelta();
+    sangria.material.uniforms.wineFill.value = (Math.sin(mouseY * 0.01) + 1) * 0.5;
 }
 
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-}
-
+init();
 

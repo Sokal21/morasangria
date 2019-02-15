@@ -4,6 +4,7 @@
 
 uniform float time;
 uniform float wineFill;
+uniform float timeMult;
 varying vec3 vPosition;
 
 //	Classic Perlin 2D Noise 
@@ -46,17 +47,17 @@ float cnoise(vec2 P){
 }
 
 
-
 void main() {
+    float correctedTime = time * timeMult;
 	float top = 0.5 - wineFill;
-	float noisedTop = top + cnoise(vec2(time, vPosition.x * 5.0)) * 0.01;
+	float noisedTop = top + cnoise(vec2(correctedTime, vPosition.x * 5.0)) * 0.01;
 	
 	// Multipliers determinan qué zonas van pintadas de vino.
 	// fillMultiplier: el vino en la jarra
 	float fillMultiplier = vPosition.y < noisedTop ? 1.0 : 0.0;
 	
 	// streamMultiplier: el chorro de vino
-	float streamPos = abs(vPosition.x) + cnoise(vec2(time, vPosition.y * 5.0)) * 0.005;
+	float streamPos = abs(vPosition.x) + cnoise(vec2(correctedTime, vPosition.y * 5.0)) * 0.005;
 	float streamMultiplier = streamPos < (vPosition.y + 1.0) * 0.02 ? 1.0 : 0.0;
 	
 	// dropsMultiplier: las gotas de vino
@@ -64,7 +65,7 @@ void main() {
 	float dropsMultiplier = 0.0;
 	for(int i = 0; i < DROPS_COUNT; i++) {
 		float dropSize = float(i) * 0.0015;
-		float dropTime = mod(time + float(i) / float(DROPS_COUNT), 1.0) / 1.0;
+		float dropTime = mod(correctedTime + float(i) / float(DROPS_COUNT), 1.0) / 1.0;
 		float direction = mod(float(i), 2.0) <= 0.5 ? -1.0 : 1.0;
 		float amp = float(i) / float(DROPS_COUNT);
 		vec2 dropPos = dropsSource + vec2( amp * direction * (dropTime / 10.0), sin(dropTime * M_PI) * 0.05 );
